@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from database import init_db, get_user_by_username, create_user, get_best_records_all, get_ranking_all
 
 app = Flask(__name__)
-app.secret_key = "numeron-secret-key-2024"
+app.secret_key = os.environ.get("SECRET_KEY", "numeron-secret-key-2024")
 
 login_manager = LoginManager()
 login_manager.init_app(app)

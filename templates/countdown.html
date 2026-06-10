@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カウントダウン</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ✦ カウントダウン
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="title">✦ カウントダウン</h1>
+    <p class="subtitle">— 数字を計算して目標値を作ろう —</p>
+
+    <div class="nav-links">
+        <a href="/my_records" class="nav-link">✦ マイ記録</a>
+        <a href="/ranking?game=countdown" class="nav-link">❋ ランキング</a>
+        <a href="/countdown/howto" class="nav-link">✦ 遊び方</a>
+    </div>
+
+    <div id="diff-area">
+        <p class="diff-label">— 難易度を選んでください —</p>
+        <div class="btn-group">
+            <button class="btn btn-easy"   onclick="startGame('easy')">✦ やさしい<br>1〜9</button>
+            <button class="btn btn-normal" onclick="startGame('normal')">❖ ふつう<br>1〜25</button>
+            <button class="btn btn-hard"   onclick="startGame('hard')">✧ むずかしい<br>1〜100</button>
+        </div>
+    </div>
+
+    <div class="game-area" id="game-area">
+        <div class="cd-info-row">
+            <div class="cd-info-box">
+                <p class="cd-info-label">目標</p>
+                <p class="cd-target" id="target-num">---</p>
+            </div>
+            <div class="cd-info-box">
+                <p class="cd-info-label">残り時間</p>
+                <p class="cd-timer" id="timer">60</p>
+            </div>
+        </div>
+
+        <div class="cd-section-label">— 配られた数字 —</div>
+        <div class="cd-numbers" id="number-tiles"></div>
+
+        <div class="cd-section-label">— 記号 —</div>
+        <div class="cd-symbols">
+            <button class="cd-sym-btn" onclick="addSymbol('+')">＋</button>
+            <button class="cd-sym-btn" onclick="addSymbol('-')">－</button>
+            <button class="cd-sym-btn" onclick="addSymbol('*')">×</button>
+            <button class="cd-sym-btn" onclick="addSymbol('/')">÷</button>
+            <button class="cd-sym-btn" onclick="addSymbol('(')">（</button>
+            <button class="cd-sym-btn" onclick="addSymbol(')')">）</button>
+            <button class="cd-sym-btn cd-sym-del" onclick="deleteLast()">⌫</button>
+            <button class="cd-sym-btn cd-sym-clear" onclick="clearExpr()">✕</button>
+        </div>
+
+        <div class="cd-expr-display" id="expr-display">式を入力してください</div>
+
+        <p class="status" id="status">数字と記号をタップして式を作ってください</p>
+        <p class="error-msg" id="error-msg"></p>
+        <p class="clear-msg" id="clear-msg"></p>
+
+        <div id="input-area">
+            <button class="btn-send" style="width:100%;" onclick="checkAnswer()">送信して確認</button>
+        </div>
+
+        <div class="history" style="margin-top:1rem;">
+            <p class="history-title">◆ これまでの回答</p>
+            <div id="history-list"></div>
+        </div>
+        <button class="btn-reset" onclick="resetGame()">↺ 最初からやり直す</button>
+    </div>
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<button onclick="history.back()" class="back-to-top">← 戻る</button>
+
+<script>
+    let timerInterval = null;
+    let timeLeft = 60;
+    let attempts = 0;
+    let gameCleared = false;
+    let gameOver = false;
+    let expression = "";
+    let usedTileIndices = [];
+
+    function updateDisplay() {
+        const el = document.getElementById("expr-display");
+        el.textContent = expression || "式を入力してください";
+        el.style.color = expression ? "#3a5a6e" : "#b4b2a9";
+    }
+
+    function updateTiles() {
+        const tiles = document.querySelectorAll(".cd-tile");
+        tiles.forEach((tile, index) => {
+            if (usedTileIndices.includes(index)) {
+                tile.disabled = true;
+                tile.style.opacity = "0.3";
+                tile.style.cursor = "not-allowed";
+                tile.style.transform = "none";
+            } else {
+                tile.disabled = false;
+                tile.style.opacity = "1";
+                tile.style.cursor = "pointer";
+            }
+        });
+    }
+
+    function addNumber(n, tileIndex) {
+        if (gameCleared || gameOver) return;
+        if (usedTileIndices.includes(tileIndex)) return;
+        usedTileIndices.push(tileIndex);
+        expression += n;
+        updateDisplay();
+        updateTiles();
+    }
+
+    function addSymbol(s) {
+        if (gameCleared || gameOver) return;
+        expression += " " + s + " ";
+        updateDisplay();
+    }
+
+    function deleteLast() {
+        if (gameCleared || gameOver) return;
+        const trimmed = expression.trimEnd();
+        if (trimmed.endsWith(" ")) {
+            expression = trimmed.slice(0, -3).trimEnd();
+        } else {
+            const match = expression.match(/(\d+)$/);
+            if (match) {
+                const deletedNum = parseInt(match[1]);
+                const tiles = document.querySelectorAll(".cd-tile");
+                for (let i = usedTileIndices.length - 1; i >= 0; i--) {
+                    const idx = usedTileIndices[i];
+                    if (parseInt(tiles[idx].textContent) === deletedNum) {
+                        usedTileIndices.splice(i, 1);
+                        break;
+                    }
+                }
+                expression = expression.slice(0, -match[1].length);
+            }
+        }
+        updateDisplay();
+        updateTiles();
+    }
+
+    function clearExpr() {
+        if (gameCleared || gameOver) return;
+        expression = "";
+        usedTileIndices = [];
+        updateDisplay();
+        updateTiles();
+    }
+
+    async function startGame(difficulty) {
+        const res = await fetch("/countdown/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ difficulty })
+        });
+        const data = await res.json();
+
+        gameCleared = false;
+        gameOver = false;
+        attempts = 0;
+        timeLeft = data.time_limit;
+        expression = "";
+        usedTileIndices = [];
+
+        document.getElementById("diff-area").style.display = "none";
+        document.getElementById("game-area").style.display = "block";
+        document.getElementById("input-area").style.display = "block";
+        document.getElementById("expr-display").style.display = "block";
+        document.getElementById("status").style.display = "block";
+        document.getElementById("target-num").textContent = data.target;
+        document.getElementById("history-list").innerHTML = "";
+        document.getElementById("error-msg").style.display = "none";
+        document.getElementById("clear-msg").style.display = "none";
+        document.getElementById("status").textContent = "数字と記号をタップして式を作ってください";
+        updateDisplay();
+
+        const tiles = document.getElementById("number-tiles");
+        tiles.innerHTML = "";
+        data.numbers.forEach((n, index) => {
+            const tile = document.createElement("button");
+            tile.className = "cd-tile";
+            tile.textContent = n;
+            tile.onclick = () => addNumber(n, index);
+            tiles.appendChild(tile);
+        });
+
+        clearInterval(timerInterval);
+        updateTimer();
+        timerInterval = setInterval(async () => {
+            timeLeft--;
+            updateTimer();
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                await timeUp();
+            }
+        }, 1000);
+    }
+
+    function updateTimer() {
+        const el = document.getElementById("timer");
+        el.textContent = timeLeft;
+        el.className = "cd-timer";
+        if (timeLeft <= 10) el.classList.add("cd-timer-danger");
+    }
+
+    async function timeUp() {
+        gameOver = true;
+        document.getElementById("input-area").style.display = "none";
+        document.getElementById("expr-display").style.display = "none";
+        document.getElementById("status").style.display = "none";
+
+        const res = await fetch("/countdown/solution");
+        const data = await res.json();
+
+        const cl = document.getElementById("clear-msg");
+        cl.textContent = `時間切れ。目標「${data.target}」の解答例：${data.solution}`;
+        cl.style.display = "block";
+        cl.style.color = "#6e3a3a";
+        cl.style.background = "#f8f0ee";
+        cl.style.border = "1px solid #c9a0a0";
+    }
+
+    async function checkAnswer() {
+        if (gameCleared || gameOver) return;
+        if (!expression.trim()) return;
+
+        const errEl = document.getElementById("error-msg");
+        attempts++;
+
+        const savedExpression = expression.trim();
+
+        const res = await fetch("/countdown/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                expression: savedExpression,
+                time_left: timeLeft
+            })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            errEl.textContent = data.error;
+            errEl.style.display = "block";
+            attempts--;
+            return;
+        }
+
+        errEl.style.display = "none";
+        expression = "";
+        usedTileIndices = [];
+        updateDisplay();
+        updateTiles();
+
+        const list = document.getElementById("history-list");
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+            <span class="guess-num" style="letter-spacing:1px; font-size:12px;">${savedExpression}</span>
+            <span class="result">＝ ${data.result}</span>
+            <span class="attempt-count">${attempts}回目</span>
+        `;
+        list.prepend(item);
+
+        if (data.clear) {
+            gameCleared = true;
+            clearInterval(timerInterval);
+            document.getElementById("input-area").style.display = "none";
+            document.getElementById("expr-display").style.display = "none";
+            document.getElementById("status").style.display = "none";
+            const cl = document.getElementById("clear-msg");
+            cl.textContent = `✦ 正解！${data.used_seconds}秒で達成しました！`;
+            cl.style.display = "block";
+        } else {
+            document.getElementById("status").textContent =
+                `${data.result}（目標まで あと ${data.diff}）`;
+        }
+    }
+
+    function resetGame() {
+        clearInterval(timerInterval);
+        expression = "";
+        usedTileIndices = [];
+        document.getElementById("expr-display").style.display = "block";
+        document.getElementById("status").style.display = "block";
+        document.getElementById("diff-area").style.display = "block";
+        document.getElementById("game-area").style.display = "none";
+    }
+</script>
+</body>
+</html>

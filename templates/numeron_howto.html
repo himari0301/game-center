@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヌメロンの遊び方</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ♟ ゲームセンター
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="howto-card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="howto-title">✦ ヌメロンの遊び方</h1>
+
+    <div class="howto-section">
+        <h2>❖ ゲームの目的</h2>
+        <p>コンピューターが決めた重複なしの数字を当てるゲームです。<br>
+        EATとBITEのヒントを手がかりに正解を絞り込みましょう。</p>
+    </div>
+
+    <div class="howto-section">
+        <h2>✦ 難易度</h2>
+        <table class="howto-table">
+            <tr><th>難易度</th><th>桁数</th></tr>
+            <tr><td>✦ やさしい</td><td>4桁</td></tr>
+            <tr><td>❖ ふつう</td><td>5桁</td></tr>
+            <tr><td>✧ むずかしい</td><td>7桁</td></tr>
+        </table>
+    </div>
+
+    <div class="howto-section">
+        <h2>◆ EATとBITEとは？</h2>
+        <table class="howto-table">
+            <tr><th>判定</th><th>意味</th></tr>
+            <tr><td>EAT</td><td>数字も位置も合っている</td></tr>
+            <tr><td>BITE</td><td>数字は合っているが位置が違う</td></tr>
+        </table>
+    </div>
+
+    <div class="howto-section">
+        <h2>✧ 例題</h2>
+        <p>正解が <strong>4 2 7</strong> の場合</p>
+        <div class="howto-example">
+            <p>4 2 7 と答えると → 3 EAT 0 BITE（正解）</p>
+            <p>7 3 4 と答えると → 0 EAT 2 BITE</p>
+            <p>3 2 8 と答えると → 1 EAT 0 BITE</p>
+        </div>
+    </div>
+
+    <div class="howto-section">
+        <h2>❋ クリア条件</h2>
+        <p>全桁が EAT になったらクリアです。<br>
+        少ない回数でのクリアを目指しましょう。</p>
+    </div>
+
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<button onclick="history.back()" class="back-to-top">← 戻る</button>
+
+</body>
+</html>

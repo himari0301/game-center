@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヌメロン</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ♟ ゲームセンター
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="title">♟ ヌメロン</h1>
+    <p class="subtitle">— 重複なしの数字を当てよう —</p>
+
+    <div class="nav-links">
+        <a href="/my_records" class="nav-link">✦ マイ記録</a>
+        <a href="/ranking" class="nav-link">❋ ランキング</a>
+        <a href="/numeron/howto" class="nav-link">✦ 遊び方</a>
+    </div>
+
+    <div id="diff-area">
+        <p class="diff-label">— 難易度を選んでください —</p>
+        <div class="btn-group">
+            <button class="btn btn-easy"   onclick="startGame('easy')">✦ やさしい<br>4桁</button>
+            <button class="btn btn-normal" onclick="startGame('normal')">❖ ふつう<br>5桁</button>
+            <button class="btn btn-hard"   onclick="startGame('hard')">✧ むずかしい<br>7桁</button>
+        </div>
+    </div>
+
+    <div class="game-area" id="game-area">
+        <p class="status" id="status">数字を入力してください</p>
+        <p class="error-msg" id="error-msg"></p>
+        <p class="clear-msg" id="clear-msg"></p>
+        <div id="input-area">
+            <div class="input-row">
+                <input class="guess-input" id="guess-input" type="text" placeholder="？？？" maxlength="7" />
+                <button class="btn-send" onclick="sendGuess()">送信</button>
+            </div>
+        </div>
+        <div class="history">
+            <p class="history-title">◆ これまでの回答</p>
+            <div id="history-list"></div>
+        </div>
+        <button class="btn-reset" onclick="resetGame()">↺ 最初からやり直す</button>
+    </div>
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<button onclick="history.back()" class="back-to-top">← 戻る</button>
+
+<script>
+    let currentDigits = 0;
+    let gameCleared = false;
+
+    async function startGame(difficulty) {
+        const res = await fetch("/numeron/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ difficulty })
+        });
+        const data = await res.json();
+        currentDigits = data.digits;
+        gameCleared = false;
+
+        document.getElementById("diff-area").style.display = "none";
+        document.getElementById("game-area").style.display = "block";
+        document.getElementById("input-area").style.display = "block";
+        document.getElementById("status").textContent = data.message;
+        document.getElementById("guess-input").maxLength = currentDigits;
+        document.getElementById("guess-input").placeholder = "？".repeat(currentDigits);
+        document.getElementById("history-list").innerHTML = "";
+        document.getElementById("error-msg").style.display = "none";
+        document.getElementById("clear-msg").style.display = "none";
+    }
+
+    async function sendGuess() {
+        if (gameCleared) return;
+        const input = document.getElementById("guess-input");
+        const val = input.value.trim();
+        input.value = "";
+        const errEl = document.getElementById("error-msg");
+
+        const res = await fetch("/numeron/guess", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ guess: val })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            errEl.textContent = data.error;
+            errEl.style.display = "block";
+            return;
+        }
+
+        errEl.style.display = "none";
+
+        const list = document.getElementById("history-list");
+        const item = document.createElement("div");
+        item.className = "history-item";
+        item.innerHTML = `
+            <span class="guess-num">${val}</span>
+            <span class="result">${data.eat} EAT  ${data.bite} BITE</span>
+            <span class="attempt-count">${data.attempts}回目</span>
+        `;
+        list.prepend(item);
+
+        if (data.clear) {
+            gameCleared = true;
+            document.getElementById("input-area").style.display = "none";
+            const cl = document.getElementById("clear-msg");
+            cl.textContent = `✦ 正解！${data.attempts}回で当てました！答えは「${data.answer}」`;
+            cl.style.display = "block";
+            document.getElementById("status").textContent = "— クリア おめでとうございます —";
+        } else {
+            document.getElementById("status").textContent =
+                `あと少しです（${data.attempts}回目）`;
+        }
+    }
+
+    function resetGame() {
+        document.getElementById("diff-area").style.display = "block";
+        document.getElementById("game-area").style.display = "none";
+    }
+
+    document.getElementById("guess-input").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") sendGuess();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ランキング</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ♟ ゲームセンター
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="howto-card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="howto-title">❋ ランキング</h1>
+
+    <div class="rank-tabs">
+        <a href="/ranking?game=numeron&difficulty=easy"
+           class="rank-tab {% if current_game == 'numeron' %}active{% endif %}">
+            ♟ ヌメロン
+        </a>
+        <a href="/ranking?game=countdown&difficulty=easy"
+           class="rank-tab {% if current_game == 'countdown' %}active{% endif %}">
+            ✦ カウントダウン
+        </a>
+    </div>
+
+    <div class="rank-tabs">
+        <a href="/ranking?game={{ current_game }}&difficulty=easy"
+           class="rank-tab {% if current_difficulty == 'easy' %}active{% endif %}">
+            ✦ やさしい
+        </a>
+        <a href="/ranking?game={{ current_game }}&difficulty=normal"
+           class="rank-tab {% if current_difficulty == 'normal' %}active{% endif %}">
+            ❖ ふつう
+        </a>
+        <a href="/ranking?game={{ current_game }}&difficulty=hard"
+           class="rank-tab {% if current_difficulty == 'hard' %}active{% endif %}">
+            ✧ むずかしい
+        </a>
+    </div>
+
+    <div class="howto-section">
+        {% if rankings[current_game][current_difficulty] %}
+            <table class="howto-table">
+                <tr>
+                    <th>順位</th>
+                    <th>ユーザー名</th>
+                    <th>{% if current_game == 'countdown' %}最短秒数{% else %}最少回数{% endif %}</th>
+                    <th>プレイ数</th>
+                </tr>
+                {% for record in rankings[current_game][current_difficulty] %}
+                <tr>
+                    <td>
+                        {% if loop.index == 1 %}1位
+                        {% elif loop.index == 2 %}2位
+                        {% elif loop.index == 3 %}3位
+                        {% else %}{{ loop.index }}位
+                        {% endif %}
+                    </td>
+                    <td>{{ record.username }}</td>
+                    <td>{{ record.best }}{% if current_game == 'countdown' %}秒{% else %}回{% endif %}</td>
+                    <td>{{ record.plays }}回</td>
+                </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p style="text-align:center; color:#7a9aaa; padding:1rem">
+                まだ記録がありません<br>最初のプレイヤーになりましょう
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<button onclick="history.back()" class="back-to-top">← 戻る</button>
+
+</body>
+</html>

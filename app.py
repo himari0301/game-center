@@ -29,7 +29,13 @@ def load_user(user_id):
 
 @app.route("/")
 def top():
-    return render_template("top.html")
+    import os
+    version = os.environ.get("RENDER_GIT_COMMIT", "local")[:7]
+    branch = os.environ.get("RENDER_GIT_BRANCH", "dev")
+    return render_template("top.html",
+        version=version,
+        branch=branch
+    )
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

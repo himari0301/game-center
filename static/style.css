@@ -673,3 +673,13 @@ body {
 @media (min-width: 900px) {
     .card, .howto-card { max-width: 560px; padding: 2.5rem; }
 }
+
+.version-label {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    font-size: 11px;
+    color: #b4b2a9;
+    letter-spacing: 1px;
+    z-index: 50;
+}

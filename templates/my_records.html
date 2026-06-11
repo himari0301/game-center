@@ -73,7 +73,19 @@
     <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
 </div>
 
-<button onclick="history.back()" class="back-to-top">← 戻る</button>
+<button onclick="goBack('{{ from_page }}')" class="back-to-top">← 戻る</button>
+
+<script>
+    function goBack(from) {
+        if (from === 'numeron') {
+            window.location.href = '/numeron';
+        } else if (from === 'countdown') {
+            window.location.href = '/countdown';
+        } else {
+            window.location.href = '/';
+        }
+    }
+</script>
 
 </body>
 </html>

@@ -89,18 +89,24 @@ def countdown_howto():
 def ranking():
     game = request.args.get("game", "numeron")
     difficulty = request.args.get("difficulty", "easy")
+    from_page = request.args.get("from", "")
     rankings = get_ranking_all()
     return render_template("ranking.html",
         rankings=rankings,
         current_game=game,
-        current_difficulty=difficulty
+        current_difficulty=difficulty,
+        from_page=from_page
     )
 
 @app.route("/my_records")
 @login_required
 def my_records():
+    from_page = request.args.get("from", "")
     records = get_best_records_all(current_user.id)
-    return render_template("my_records.html", records=records)
+    return render_template("my_records.html",
+        records=records,
+        from_page=from_page
+    )
 
 # ヌメロンのルートを登録
 from numeron_app import numeron_bp

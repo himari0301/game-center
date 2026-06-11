@@ -10,6 +10,13 @@ app.secret_key = os.environ.get("SECRET_KEY", "numeron-secret-key-2024")
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+# ===== バージョン管理 =====
+# Ver. X.Y.Z
+# X（メジャー）：ゲームの大幅変更・全面リニューアル・作り直し
+# Y（マイナー）：新機能追加（新ゲーム・フレンド機能・実績機能など）
+# Z（パッチ）  ：バグ修正・デザイン微調整・文言変更
+APP_VERSION = "1.1.0"
+
 class User(UserMixin):
     def __init__(self, id, username):
         self.id = id
@@ -24,9 +31,13 @@ def load_user(user_id):
 
 @app.route("/")
 def top():
-    version = os.environ.get("RENDER_GIT_COMMIT", "local")[:7]
+    commit = os.environ.get("RENDER_GIT_COMMIT", "local")[:7]
     branch = os.environ.get("RENDER_GIT_BRANCH", "dev")
-    return render_template("top.html", version=version, branch=branch)
+    return render_template("top.html",
+        version=APP_VERSION,
+        commit=commit,
+        branch=branch
+    )
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

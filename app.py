@@ -15,7 +15,7 @@ login_manager.login_view = "login"
 # X（メジャー）：ゲームの大幅変更・全面リニューアル・作り直し
 # Y（マイナー）：新機能追加（新ゲーム・フレンド機能・実績機能など）
 # Z（パッチ）  ：バグ修正・デザイン微調整・文言変更
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 class User(UserMixin):
     def __init__(self, id, username):

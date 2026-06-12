@@ -38,7 +38,6 @@
         <a href="/2048/howto" class="nav-link" onclick="confirmLeave(event, '/2048/howto')">✦ 遊び方</a>
     </div>
 
-    <!-- 再開ボタン（保存データがある場合のみ表示） -->
     <div id="resume-area" style="display:none; margin-bottom:1rem;">
         <button class="btn-resume" onclick="resumeGame()">↺ 続きから再開</button>
     </div>
@@ -103,6 +102,7 @@
             document.getElementById("resume-area").style.display = "block";
             document.getElementById("board").style.display = "none";
             document.getElementById("score").textContent = "0";
+            document.getElementById("status").style.display = "none";
         } else {
             newGame();
         }
@@ -395,6 +395,7 @@
     }
 
     async function showResult(cleared) {
+        console.log("showResult called, score:", score, "isLoggedIn:", isLoggedIn);
         const cl = document.getElementById("clear-msg");
         document.getElementById("status").style.display = "none";
         if (cleared) {

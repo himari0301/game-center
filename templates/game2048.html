@@ -15,11 +15,11 @@
         {% else %}
             ✦ 2048
         {% endif %}
-        <a href="/" class="top-bar-home">♟ トップ</a>
+        <a href="/" class="top-bar-home" onclick="confirmLeave(event, '/')">♟ トップ</a>
     </span>
     <div class="top-bar-right">
         {% if current_user.is_authenticated %}
-            <a href="/logout" class="top-bar-link">← ログアウト</a>
+            <a href="/logout" class="top-bar-link" onclick="confirmLeave(event, '/logout')">← ログアウト</a>
         {% else %}
             <a href="/login" class="top-bar-link">✦ ログイン</a>
             <a href="/register" class="top-bar-link">✧ 新規登録</a>
@@ -33,9 +33,9 @@
     <p class="subtitle">— タイルを合体させて2048を作ろう —</p>
 
     <div class="nav-links">
-        <a href="/my_records?from=2048" class="nav-link">✦ マイ記録</a>
-        <a href="/ranking?game=2048&from=2048" class="nav-link">❋ ランキング</a>
-        <a href="/2048/howto" class="nav-link">✦ 遊び方</a>
+        <a href="/my_records?from=2048" class="nav-link" onclick="confirmLeave(event, '/my_records?from=2048')">✦ マイ記録</a>
+        <a href="/ranking?game=2048&from=2048" class="nav-link" onclick="confirmLeave(event, '/ranking?game=2048&from=2048')">❋ ランキング</a>
+        <a href="/2048/howto" class="nav-link" onclick="confirmLeave(event, '/2048/howto')">✦ 遊び方</a>
     </div>
 
     <div class="game2048-header">
@@ -55,13 +55,14 @@
     <div class="game2048-board" id="board"></div>
 
     <div class="btn-group" style="margin-top:1rem;">
-        <button class="btn btn-easy" onclick="newGame()">↺ 新しいゲーム</button>
+        <button class="btn btn-normal" onclick="restartGame()">↺ 最初からやり直す</button>
+        <button class="btn btn-easy" onclick="confirmLeaveTop(event)">☰ トップに戻る</button>
     </div>
 
     <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
 </div>
 
-<button onclick="window.location.href='/'" class="back-to-top">← 戻る</button>
+<button onclick="handleBack(event)" class="back-to-top">← 戻る</button>
 
 <script>
     const GRID = 4;
@@ -72,6 +73,7 @@
     let gameCleared = false;
     let gameOver = false;
     let isAnimating = false;
+    let gameInProgress = false;
     const isLoggedIn = {{ 'true' if current_user.is_authenticated else 'false' }};
 
     const COLORS = {
@@ -89,6 +91,61 @@
         2048: { bg: "#edc22e", color: "#f9f6f2" },
     };
 
+    // ===== ダイアログ =====
+    function showDialog(message, onOk, okLabel = "中断する") {
+        const existing = document.getElementById("custom-dialog");
+        if (existing) existing.remove();
+        const overlay = document.createElement("div");
+        overlay.className = "dialog-overlay";
+        overlay.id = "custom-dialog";
+        overlay.innerHTML = `
+            <div class="dialog-box">
+                <p class="dialog-title">⚠ ゲームを中断しますか？</p>
+                <p class="dialog-message">${message}</p>
+                <div class="dialog-buttons">
+                    <button class="dialog-btn-cancel" onclick="closeDialog()">キャンセル</button>
+                    <button class="dialog-btn-ok" id="dialog-ok-btn">${okLabel}</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById("dialog-ok-btn").onclick = () => { closeDialog(); onOk(); };
+    }
+
+    function closeDialog() {
+        const d = document.getElementById("custom-dialog");
+        if (d) d.remove();
+    }
+
+    function confirmLeave(event, url) {
+        if (!gameInProgress) {
+            window.location.href = url;
+            return;
+        }
+        event.preventDefault();
+        showDialog(
+            "ゲームを中断してページを移動しますか？",
+            () => { window.location.href = url; }
+        );
+    }
+
+    function confirmLeaveTop(event) {
+        confirmLeave(event, "/");
+    }
+
+    function handleBack(event) {
+        if (gameInProgress) {
+            event.preventDefault();
+            showDialog(
+                "ゲームを中断してトップに戻りますか？",
+                () => { window.location.href = "/"; }
+            );
+        } else {
+            window.location.href = "/";
+        }
+    }
+
+    // ===== ゲーム制御 =====
     function getTileSize() {
         const boardEl = document.getElementById("board");
         const w = boardEl.offsetWidth - GAP * 2;
@@ -100,6 +157,7 @@
         score = 0;
         gameCleared = false;
         gameOver = false;
+        gameInProgress = true;
         document.getElementById("score").textContent = "0";
         document.getElementById("clear-msg").style.display = "none";
         document.getElementById("status").style.display = "block";
@@ -108,6 +166,18 @@
         addRandom();
         render();
         updateBest();
+    }
+
+    function restartGame() {
+        if (gameInProgress) {
+            showDialog(
+                "最初からやり直しますか？<br>現在のスコアは失われます。",
+                () => { newGame(); },
+                "やり直す"
+            );
+        } else {
+            newGame();
+        }
     }
 
     function addRandom() {
@@ -158,7 +228,6 @@
 
                 const isMerged = mergedCells.some(([mr, mc]) => mr === r && mc === c);
                 const isNew = newCells.some(([nr, nc]) => nr === r && nc === c);
-
                 if (isMerged) tile.classList.add("tile-merged");
                 else if (isNew) tile.classList.add("tile-new");
 
@@ -166,7 +235,6 @@
             }
         }
 
-        // ボードの高さを設定
         const h = GAP * 2 + GRID * tileSize + GAP * (GRID - 1);
         boardEl.style.height = h + "px";
     }
@@ -228,7 +296,6 @@
         const newCells = [];
         setTimeout(() => {
             addRandom();
-            // 新しく追加されたセルを検出
             for (let r = 0; r < GRID; r++)
                 for (let c = 0; c < GRID; c++)
                     if (board[r][c] !== 0 &&
@@ -244,12 +311,14 @@
                     for (let c = 0; c < GRID; c++)
                         if (board[r][c] === 2048) {
                             gameCleared = true;
+                            gameInProgress = false;
                             showResult(true);
                             return;
                         }
             }
             if (checkGameOver()) {
                 gameOver = true;
+                gameInProgress = false;
                 showResult(false);
             }
         }, 120);
@@ -314,9 +383,7 @@
     }, { passive: false });
 
     // 起動
-    window.addEventListener("load", () => {
-        newGame();
-    });
+    window.addEventListener("load", () => { newGame(); });
 </script>
 </body>
 </html>

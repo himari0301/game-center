@@ -683,7 +683,6 @@ body {
     letter-spacing: 1px;
     z-index: 50;
 }
-
 /* ===== 2048 ===== */
 .game2048-header {
     display: flex;
@@ -717,49 +716,17 @@ body {
     position: relative;
     background: #b4a898;
     border-radius: 8px;
-    padding: 10px;
+    padding: 0;
     margin: 0 auto;
     width: 100%;
     max-width: 400px;
-    aspect-ratio: 1;
     touch-action: none;
-}
-
-.game2048-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-}
-
-.game2048-cell {
-    background: rgba(238, 228, 218, 0.35);
-    border-radius: 6px;
-}
-
-.game2048-tiles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    user-select: none;
 }
 
 .game2048-tile {
     position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    font-weight: 700;
-    font-family: inherit;
-    transition: left 0.1s ease, top 0.1s ease;
+    transition: all 0.1s ease;
 }
 
 .tile-new {
@@ -767,11 +734,7 @@ body {
 }
 
 .tile-merged {
-    animation: tile-merge 0.15s ease;
-}
-
-.tile-moving {
-    transition: left 0.1s ease, top 0.1s ease;
+    animation: tile-merge 0.2s ease;
 }
 
 @keyframes tile-appear {
@@ -781,6 +744,6 @@ body {
 
 @keyframes tile-merge {
     0%   { transform: scale(1); }
-    50%  { transform: scale(1.15); }
+    50%  { transform: scale(1.2); }
     100% { transform: scale(1); }
 }

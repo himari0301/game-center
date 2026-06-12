@@ -116,3 +116,14 @@ init_db()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+    @app.route("/debug/records")
+def debug_records():
+    from database import get_db
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM records WHERE game = '2048'")
+    records = cur.fetchall()
+    cur.close()
+    conn.close()
+    return str(list(records))

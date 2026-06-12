@@ -38,6 +38,11 @@
         <a href="/2048/howto" class="nav-link" onclick="confirmLeave(event, '/2048/howto')">✦ 遊び方</a>
     </div>
 
+    <!-- 再開ボタン（保存データがある場合のみ表示） -->
+    <div id="resume-area" style="display:none; margin-bottom:1rem;">
+        <button class="btn-resume" onclick="resumeGame()">↺ 続きから再開</button>
+    </div>
+
     <div class="game2048-header">
         <div class="game2048-score-box">
             <p class="game2048-score-label">スコア</p>
@@ -91,6 +96,47 @@
         2048: { bg: "#edc22e", color: "#f9f6f2" },
     };
 
+    // ===== ページ読み込み時 =====
+    window.addEventListener("load", () => {
+        const saved = sessionStorage.getItem("2048_save");
+        if (saved) {
+            document.getElementById("resume-area").style.display = "block";
+            document.getElementById("board").style.display = "none";
+            document.getElementById("score").textContent = "0";
+        } else {
+            newGame();
+        }
+    });
+
+    // ===== 保存・復元 =====
+    function saveGame() {
+        if (!gameInProgress) return;
+        sessionStorage.setItem("2048_save", JSON.stringify({
+            board, score, bestScore
+        }));
+    }
+
+    function resumeGame() {
+        const saved = sessionStorage.getItem("2048_save");
+        if (!saved) return;
+        const d = JSON.parse(saved);
+        board = d.board;
+        score = d.score;
+        bestScore = d.bestScore;
+        gameCleared = false;
+        gameOver = false;
+        gameInProgress = true;
+
+        document.getElementById("resume-area").style.display = "none";
+        document.getElementById("board").style.display = "block";
+        document.getElementById("score").textContent = score;
+        document.getElementById("status").style.display = "block";
+        document.getElementById("status").textContent = "上下左右キーまたはスワイプで操作";
+        document.getElementById("clear-msg").style.display = "none";
+        updateBest();
+        render();
+    }
+
     // ===== ダイアログ =====
     function showDialog(message, onOk, okLabel = "中断する") {
         const existing = document.getElementById("custom-dialog");
@@ -124,8 +170,12 @@
         }
         event.preventDefault();
         showDialog(
-            "ゲームを中断してページを移動しますか？",
-            () => { window.location.href = url; }
+            "途中経過は保存されます。<br>後ほど続きから再開できます。",
+            () => {
+                saveGame();
+                gameInProgress = false;
+                window.location.href = url;
+            }
         );
     }
 
@@ -137,8 +187,12 @@
         if (gameInProgress) {
             event.preventDefault();
             showDialog(
-                "ゲームを中断してトップに戻りますか？",
-                () => { window.location.href = "/"; }
+                "途中経過は保存されます。<br>後ほど続きから再開できます。",
+                () => {
+                    saveGame();
+                    gameInProgress = false;
+                    window.location.href = "/";
+                }
             );
         } else {
             window.location.href = "/";
@@ -153,11 +207,14 @@
     }
 
     function newGame() {
+        sessionStorage.removeItem("2048_save");
         board = Array(GRID).fill(null).map(() => Array(GRID).fill(0));
         score = 0;
         gameCleared = false;
         gameOver = false;
         gameInProgress = true;
+        document.getElementById("resume-area").style.display = "none";
+        document.getElementById("board").style.display = "block";
         document.getElementById("score").textContent = "0";
         document.getElementById("clear-msg").style.display = "none";
         document.getElementById("status").style.display = "block";
@@ -305,6 +362,7 @@
 
             render(newCells, mergedCells);
             isAnimating = false;
+            saveGame();
 
             if (!gameCleared) {
                 for (let r = 0; r < GRID; r++)
@@ -312,6 +370,7 @@
                         if (board[r][c] === 2048) {
                             gameCleared = true;
                             gameInProgress = false;
+                            sessionStorage.removeItem("2048_save");
                             showResult(true);
                             return;
                         }
@@ -319,6 +378,7 @@
             if (checkGameOver()) {
                 gameOver = true;
                 gameInProgress = false;
+                sessionStorage.removeItem("2048_save");
                 showResult(false);
             }
         }, 120);
@@ -381,9 +441,6 @@
         else move(dy > 0 ? "down" : "up");
         e.preventDefault();
     }, { passive: false });
-
-    // 起動
-    window.addEventListener("load", () => { newGame(); });
 </script>
 </body>
 </html>

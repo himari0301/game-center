@@ -105,21 +105,8 @@ def my_records():
         from_page=request.args.get("from", "")
     )
 
-from numeron_app import numeron_bp
-from countdown_app import countdown_bp
-app.register_blueprint(numeron_bp)
-app.register_blueprint(countdown_bp)
-from game2048_app import game2048_bp
-app.register_blueprint(game2048_bp)
-
-init_db()
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-    @app.route("/debug/records")
+@app.route("/debug/records")
 def debug_records():
-    from database import get_db
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM records WHERE game = '2048'")
@@ -127,3 +114,15 @@ def debug_records():
     cur.close()
     conn.close()
     return str(list(records))
+
+from numeron_app import numeron_bp
+from countdown_app import countdown_bp
+from game2048_app import game2048_bp
+app.register_blueprint(numeron_bp)
+app.register_blueprint(countdown_bp)
+app.register_blueprint(game2048_bp)
+
+init_db()
+
+if __name__ == "__main__":
+    app.run(debug=True)

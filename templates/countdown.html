@@ -345,13 +345,12 @@
         saveGame();
     }
 
-    // ===== ゲーム制御 =====
-    function doReset() {
+    function doReset(clearSave = true) {
         clearInterval(timerInterval);
         expression = "";
         usedTileIndices = [];
         gameInProgress = false;
-        sessionStorage.removeItem("countdown_save");
+        if (clearSave) sessionStorage.removeItem("countdown_save");
         document.querySelectorAll(".btn-group .btn").forEach(btn => {
             btn.disabled = false;
             btn.style.opacity = "1";
@@ -367,7 +366,7 @@
     function restartSame() {
         if (gameInProgress) {
             showDialog(
-                "同じ難易度で最初からやり直しますか？",
+                "同じ難易度で最初からやり直しますか？<br>現在の途中経過は失われます。",
                 () => { startGame(currentDifficulty); }
             );
         } else {
@@ -379,10 +378,14 @@
         if (gameInProgress) {
             showDialog(
                 "途中経過は保存されます。<br>後ほど続きから再開できます。",
-                () => { doReset(); }
+                () => {
+                    saveGame();        // ← 保存してから戻る
+                    doReset(false);    // ← 保存データは削除しない
+                    document.getElementById("resume-area").style.display = "block";
+                }
             );
         } else {
-            doReset();
+            doReset(false);
         }
     }
 

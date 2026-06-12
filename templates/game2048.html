@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ✦ 2048
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="title">✦ 2048</h1>
+    <p class="subtitle">— タイルを合体させて2048を作ろう —</p>
+
+    <div class="nav-links">
+        <a href="/my_records?from=2048" class="nav-link">✦ マイ記録</a>
+        <a href="/ranking?game=2048&from=2048" class="nav-link">❋ ランキング</a>
+    </div>
+
+    <div class="game2048-header">
+        <div class="game2048-score-box">
+            <p class="game2048-score-label">スコア</p>
+            <p class="game2048-score" id="score">0</p>
+        </div>
+        <div class="game2048-score-box">
+            <p class="game2048-score-label">最高スコア</p>
+            <p class="game2048-score" id="best-score">0</p>
+        </div>
+    </div>
+
+    <p class="status" id="status">上下左右にスライドしてタイルを合体させよう</p>
+    <p class="clear-msg" id="clear-msg"></p>
+
+    <div class="game2048-board" id="board">
+        <div class="game2048-grid">
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+            <div class="game2048-cell"></div>
+        </div>
+        <div class="game2048-tiles" id="tiles"></div>
+    </div>
+
+    <div class="btn-group" style="margin-top:1rem;">
+        <button class="btn btn-easy" onclick="newGame()">↺ 新しいゲーム</button>
+    </div>
+
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<div class="nav-links">
+    <a href="/my_records?from=2048" class="nav-link">✦ マイ記録</a>
+    <a href="/ranking?game=2048&from=2048" class="nav-link">❋ ランキング</a>
+    <a href="/2048/howto" class="nav-link">✦ 遊び方</a>
+</div>
+
+<button onclick="window.location.href='/'" class="back-to-top">← 戻る</button>
+
+<script>
+    // ===== 定数・変数 =====
+    const GRID_SIZE = 4;
+    let board = [];
+    let score = 0;
+    let bestScore = parseInt(localStorage.getItem("2048_best") || "0");
+    let gameCleared = false;
+    let gameOver = false;
+    let isAnimating = false;
+
+    // タイルの色設定
+    const TILE_COLORS = {
+        2:    { bg: "#eee4da", color: "#776e65" },
+        4:    { bg: "#ede0c8", color: "#776e65" },
+        8:    { bg: "#f2b179", color: "#f9f6f2" },
+        16:   { bg: "#f59563", color: "#f9f6f2" },
+        32:   { bg: "#f67c5f", color: "#f9f6f2" },
+        64:   { bg: "#f65e3b", color: "#f9f6f2" },
+        128:  { bg: "#edcf72", color: "#f9f6f2" },
+        256:  { bg: "#edcc61", color: "#f9f6f2" },
+        512:  { bg: "#edc850", color: "#f9f6f2" },
+        1024: { bg: "#edc53f", color: "#f9f6f2" },
+        2048: { bg: "#edc22e", color: "#f9f6f2" },
+    };
+
+    // ===== 初期化 =====
+    function newGame() {
+        board = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+        score = 0;
+        gameCleared = false;
+        gameOver = false;
+        document.getElementById("score").textContent = "0";
+        document.getElementById("clear-msg").style.display = "none";
+        document.getElementById("status").textContent = "上下左右にスライドしてタイルを合体させよう";
+        document.getElementById("status").style.display = "block";
+        addRandomTile();
+        addRandomTile();
+        renderBoard();
+        updateBestScore();
+    }
+
+    function addRandomTile() {
+        const empty = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (board[r][c] === 0) empty.push({ r, c });
+            }
+        }
+        if (empty.length === 0) return;
+        const { r, c } = empty[Math.floor(Math.random() * empty.length)];
+        board[r][c] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    // ===== 描画 =====
+    function renderBoard(movedTiles = [], mergedTiles = []) {
+        const container = document.getElementById("tiles");
+        container.innerHTML = "";
+        const boardEl = document.getElementById("board");
+        const size = boardEl.offsetWidth;
+        const gap = 10;
+        const tileSize = (size - gap * 5) / 4;
+
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const val = board[r][c];
+                if (val === 0) continue;
+
+                const tile = document.createElement("div");
+                tile.className = "game2048-tile";
+                tile.textContent = val;
+
+                const colors = TILE_COLORS[val] || { bg: "#3a5a6e", color: "#f9f6f2" };
+                tile.style.cssText = `
+                    width: ${tileSize}px;
+                    height: ${tileSize}px;
+                    left: ${gap + c * (tileSize + gap)}px;
+                    top: ${gap + r * (tileSize + gap)}px;
+                    background: ${colors.bg};
+                    color: ${colors.color};
+                    font-size: ${val >= 1024 ? tileSize * 0.3 : tileSize * 0.4}px;
+                `;
+
+                const isMerged = mergedTiles.some(t => t.r === r && t.c === c);
+                if (isMerged) tile.classList.add("tile-merged");
+
+                const moved = movedTiles.find(t => t.toR === r && t.toC === c);
+                if (moved) {
+                    const fromLeft = gap + moved.fromC * (tileSize + gap);
+                    const fromTop = gap + moved.fromR * (tileSize + gap);
+                    tile.style.left = fromLeft + "px";
+                    tile.style.top = fromTop + "px";
+                    tile.classList.add("tile-moving");
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            tile.style.left = gap + c * (tileSize + gap) + "px";
+                            tile.style.top = gap + r * (tileSize + gap) + "px";
+                        });
+                    });
+                } else if (!isMerged) {
+                    tile.classList.add("tile-new");
+                }
+
+                container.appendChild(tile);
+            }
+        }
+    }
+
+    // ===== スライドロジック =====
+    function slide(row) {
+        const filtered = row.filter(v => v !== 0);
+        const merged = [];
+        const mergeFlags = [];
+        let i = 0;
+        while (i < filtered.length) {
+            if (i + 1 < filtered.length && filtered[i] === filtered[i + 1]) {
+                merged.push(filtered[i] * 2);
+                mergeFlags.push(true);
+                score += filtered[i] * 2;
+                i += 2;
+            } else {
+                merged.push(filtered[i]);
+                mergeFlags.push(false);
+                i++;
+            }
+        }
+        while (merged.length < GRID_SIZE) {
+            merged.push(0);
+            mergeFlags.push(false);
+        }
+        return { row: merged, mergeFlags };
+    }
+
+    function move(direction) {
+        if (isAnimating || gameOver) return;
+        let moved = false;
+        const movedTiles = [];
+        const mergedTiles = [];
+        const newBoard = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+
+        for (let i = 0; i < GRID_SIZE; i++) {
+            let row = [];
+            let positions = [];
+
+            if (direction === "left") {
+                row = board[i].slice();
+                positions = row.map((_, j) => ({ r: i, c: j }));
+            } else if (direction === "right") {
+                row = board[i].slice().reverse();
+                positions = row.map((_, j) => ({ r: i, c: GRID_SIZE - 1 - j }));
+            } else if (direction === "up") {
+                row = board.map(r => r[i]);
+                positions = row.map((_, j) => ({ r: j, c: i }));
+            } else if (direction === "down") {
+                row = board.map(r => r[i]).reverse();
+                positions = row.map((_, j) => ({ r: GRID_SIZE - 1 - j, c: i }));
+            }
+
+            const { row: newRow, mergeFlags } = slide(row);
+
+            for (let j = 0; j < GRID_SIZE; j++) {
+                let toR, toC;
+                if (direction === "left") { toR = i; toC = j; }
+                else if (direction === "right") { toR = i; toC = GRID_SIZE - 1 - j; }
+                else if (direction === "up") { toR = j; toC = i; }
+                else { toR = GRID_SIZE - 1 - j; toC = i; }
+
+                if (newRow[j] !== 0) {
+                    newBoard[toR][toC] = newRow[j];
+                    if (mergeFlags[j]) mergedTiles.push({ r: toR, c: toC });
+
+                    const origPos = positions[j];
+                    if (origPos && (origPos.r !== toR || origPos.c !== toC)) {
+                        movedTiles.push({ fromR: origPos.r, fromC: origPos.c, toR, toC });
+                        moved = true;
+                    }
+                }
+            }
+
+            // 変化チェック
+            for (let j = 0; j < GRID_SIZE; j++) {
+                let origR, origC;
+                if (direction === "left") { origR = i; origC = j; }
+                else if (direction === "right") { origR = i; origC = j; }
+                else if (direction === "up") { origR = j; origC = i; }
+                else { origR = j; origC = i; }
+                if (board[origR][origC] !== newBoard[i < 2 ? (direction === "up" || direction === "down" ? j : i) : i][j < 2 ? j : j]) {
+                    moved = true;
+                }
+            }
+        }
+
+        // 実際に変化があったか確認
+        let actualMoved = false;
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (board[r][c] !== newBoard[r][c]) actualMoved = true;
+            }
+        }
+
+        if (!actualMoved) return;
+
+        board = newBoard;
+        document.getElementById("score").textContent = score;
+        updateBestScore();
+
+        isAnimating = true;
+        renderBoard(movedTiles, mergedTiles);
+
+        setTimeout(() => {
+            addRandomTile();
+            renderBoard();
+            isAnimating = false;
+
+            // 2048達成チェック
+            if (!gameCleared) {
+                for (let r = 0; r < GRID_SIZE; r++) {
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        if (board[r][c] === 2048) {
+                            gameCleared = true;
+                            showClear();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // ゲームオーバーチェック
+            if (isGameOver()) {
+                gameOver = true;
+                showGameOver();
+            }
+        }, 150);
+    }
+
+    function isGameOver() {
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (board[r][c] === 0) return false;
+                if (c < GRID_SIZE - 1 && board[r][c] === board[r][c + 1]) return false;
+                if (r < GRID_SIZE - 1 && board[r][c] === board[r + 1][c]) return false;
+            }
+        }
+        return true;
+    }
+
+    // ===== クリア・ゲームオーバー =====
+    async function showClear() {
+        const cl = document.getElementById("clear-msg");
+        cl.textContent = `✦ 2048達成！スコア：${score}`;
+        cl.style.display = "block";
+        document.getElementById("status").style.display = "none";
+
+        if ({% if current_user.is_authenticated %}true{% else %}false{% endif %}) {
+            await fetch("/2048/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score })
+            });
+        }
+    }
+
+    async function showGameOver() {
+        const cl = document.getElementById("clear-msg");
+        cl.textContent = `ゲームオーバー。スコア：${score}`;
+        cl.style.display = "block";
+        cl.style.color = "#6e3a3a";
+        cl.style.background = "#f8f0ee";
+        cl.style.border = "1px solid #c9a0a0";
+        document.getElementById("status").style.display = "none";
+
+        if ({% if current_user.is_authenticated %}true{% else %}false{% endif %}) {
+            await fetch("/2048/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score })
+            });
+        }
+    }
+
+    function updateBestScore() {
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem("2048_best", bestScore);
+        }
+        document.getElementById("best-score").textContent = bestScore;
+    }
+
+    // ===== キーボード操作 =====
+    document.addEventListener("keydown", e => {
+        const map = {
+            ArrowLeft: "left", ArrowRight: "right",
+            ArrowUp: "up", ArrowDown: "down"
+        };
+        if (map[e.key]) {
+            e.preventDefault();
+            move(map[e.key]);
+        }
+    });
+
+    // ===== スワイプ操作 =====
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.getElementById("board").addEventListener("touchstart", e => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        e.preventDefault();
+    }, { passive: false });
+
+    document.getElementById("board").addEventListener("touchend", e => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (Math.max(absDx, absDy) < 20) return;
+
+        if (absDx > absDy) {
+            move(dx > 0 ? "right" : "left");
+        } else {
+            move(dy > 0 ? "down" : "up");
+        }
+        e.preventDefault();
+    }, { passive: false });
+
+    // ===== 起動 =====
+    newGame();
+</script>
+</body>
+</html>

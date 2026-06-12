@@ -78,7 +78,10 @@ def get_best_records_all(user_id):
         SELECT
             game,
             difficulty,
-            MIN(attempts) as best,
+            CASE
+                WHEN game = '2048' THEN MAX(attempts)
+                ELSE MIN(attempts)
+            END as best,
             COUNT(*) as plays
         FROM records
         WHERE user_id = %s
@@ -87,6 +90,7 @@ def get_best_records_all(user_id):
             CASE game
                 WHEN 'countdown' THEN 1
                 WHEN 'numeron' THEN 2
+                WHEN '2048' THEN 3
             END,
             CASE difficulty
                 WHEN 'easy' THEN 1
@@ -103,19 +107,21 @@ def get_ranking_all():
     conn = get_db()
     cur = conn.cursor()
     rankings = {}
-    for game in ["numeron", "countdown"]:
+    for game in ["numeron", "countdown", "2048"]:
         rankings[game] = {}
         for difficulty in ["easy", "normal", "hard"]:
-            cur.execute("""
+            order = "DESC" if game == "2048" else "ASC"
+            agg = "MAX" if game == "2048" else "MIN"
+            cur.execute(f"""
                 SELECT
                     u.username,
-                    MIN(r.attempts) as best,
+                    {agg}(r.attempts) as best,
                     COUNT(*) as plays
                 FROM records r
                 JOIN users u ON r.user_id = u.id
                 WHERE r.game = %s AND r.difficulty = %s
                 GROUP BY u.username
-                ORDER BY best ASC
+                ORDER BY best {order}
                 LIMIT 10
             """, (game, difficulty))
             rankings[game][difficulty] = cur.fetchall()

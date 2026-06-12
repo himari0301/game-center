@@ -40,8 +40,13 @@
            class="rank-tab {% if current_game == 'countdown' %}active{% endif %}">
             ✦ カウントダウン
         </a>
+        <a href="/ranking?game=2048&difficulty=normal&from={{ from_page }}"
+           class="rank-tab {% if current_game == '2048' %}active{% endif %}">
+            ◆ 2048
+        </a>
     </div>
 
+    {% if current_game != '2048' %}
     <div class="rank-tabs">
         <a href="/ranking?game={{ current_game }}&difficulty=easy&from={{ from_page }}"
            class="rank-tab {% if current_difficulty == 'easy' %}active{% endif %}">
@@ -56,6 +61,7 @@
             ✧ むずかしい
         </a>
     </div>
+    {% endif %}
 
     <div class="howto-section">
         {% if rankings[current_game][current_difficulty] %}
@@ -63,7 +69,9 @@
                 <tr>
                     <th>順位</th>
                     <th>ユーザー名</th>
-                    <th>{% if current_game == 'countdown' %}最短秒数{% else %}最少回数{% endif %}</th>
+                    <th>{% if current_game == 'countdown' %}最短秒数
+                        {% elif current_game == '2048' %}最高スコア
+                        {% else %}最少回数{% endif %}</th>
                     <th>プレイ数</th>
                 </tr>
                 {% for record in rankings[current_game][current_difficulty] %}
@@ -76,7 +84,9 @@
                         {% endif %}
                     </td>
                     <td>{{ record.username }}</td>
-                    <td>{{ record.best }}{% if current_game == 'countdown' %}秒{% else %}回{% endif %}</td>
+                    <td>{{ record.best }}{% if current_game == 'countdown' %}秒
+                        {% elif current_game == '2048' %}pt
+                        {% else %}回{% endif %}</td>
                     <td>{{ record.plays }}回</td>
                 </tr>
                 {% endfor %}
@@ -91,7 +101,6 @@
     <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
 </div>
 
-<!-- 戻るボタン：fromパラメータに応じて遷移先を変える -->
 <button onclick="goBack('{{ from_page }}')" class="back-to-top">← 戻る</button>
 
 <script>
@@ -100,6 +109,8 @@
             window.location.href = '/numeron';
         } else if (from === 'countdown') {
             window.location.href = '/countdown';
+        } else if (from === '2048') {
+            window.location.href = '/2048';
         } else {
             window.location.href = '/';
         }

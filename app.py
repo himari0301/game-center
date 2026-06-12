@@ -109,6 +109,8 @@ from numeron_app import numeron_bp
 from countdown_app import countdown_bp
 app.register_blueprint(numeron_bp)
 app.register_blueprint(countdown_bp)
+from game2048_app import game2048_bp
+app.register_blueprint(game2048_bp)
 
 init_db()
 

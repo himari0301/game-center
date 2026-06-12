@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 遊び方</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="top-bar">
+    <span class="top-bar-left">
+        {% if current_user.is_authenticated %}
+            ◈ {{ current_user.username }}さん
+        {% else %}
+            ♟ ゲームセンター
+        {% endif %}
+        <a href="/" class="top-bar-home">♟ トップ</a>
+    </span>
+    <div class="top-bar-right">
+        {% if current_user.is_authenticated %}
+            <a href="/logout" class="top-bar-link">← ログアウト</a>
+        {% else %}
+            <a href="/login" class="top-bar-link">✦ ログイン</a>
+            <a href="/register" class="top-bar-link">✧ 新規登録</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="howto-card page-top-margin">
+    <div class="gold-bar"></div>
+    <h1 class="howto-title">✦ 2048 遊び方</h1>
+
+    <div class="howto-section">
+        <h2>✦ ゲームの目的</h2>
+        <p>4×4のグリッド上でタイルをスライドさせて、同じ数字のタイルを合体させましょう。2048のタイルを作ればクリアです！</p>
+    </div>
+
+    <div class="howto-section">
+        <h2>✦ 操作方法</h2>
+        <p>PC：キーボードの矢印キー（↑↓←→）でタイルをスライド</p>
+        <p>スマホ・タブレット：画面をスワイプしてタイルをスライド</p>
+    </div>
+
+    <div class="howto-section">
+        <h2>✦ ルール</h2>
+        <p>① 矢印の方向に全てのタイルが動きます</p>
+        <p>② 同じ数字のタイルがぶつかると合体して2倍になります</p>
+        <p>③ 合体するたびにスコアが加算されます</p>
+        <p>④ 毎ターン新しいタイル（2または4）がランダムに出現します</p>
+        <p>⑤ タイルが全て埋まって動かせなくなるとゲームオーバーです</p>
+        <div class="howto-example">
+            例：2 と 2 が合体 → 4（スコア+4）
+            　　4 と 4 が合体 → 8（スコア+8）
+            　　8 と 8 が合体 → 16（スコア+16）
+        </div>
+    </div>
+
+    <div class="howto-section">
+        <h2>✦ スコアについて</h2>
+        <p>タイルが合体するたびに、合体後の数字がスコアに加算されます。より大きな数字を合体させるほど高得点になります。</p>
+        <p>ゲームクリアまたはゲームオーバー時にスコアが記録されます。</p>
+    </div>
+
+    <div class="howto-section">
+        <h2>✦ タイルの色</h2>
+        <table class="howto-table">
+            <tr>
+                <th>タイル</th>
+                <th>スコア加算</th>
+            </tr>
+            <tr><td>2・4</td><td>合体で4・8pt</td></tr>
+            <tr><td>8・16</td><td>合体で16・32pt</td></tr>
+            <tr><td>32・64</td><td>合体で64・128pt</td></tr>
+            <tr><td>128・256</td><td>合体で256・512pt</td></tr>
+            <tr><td>512・1024</td><td>合体で1024・2048pt</td></tr>
+            <tr><td>2048</td><td>クリア！</td></tr>
+        </table>
+    </div>
+
+    <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
+</div>
+
+<button onclick="history.back()" class="back-to-top">← 戻る</button>
+
+</body>
+</html>

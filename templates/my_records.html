@@ -51,11 +51,16 @@
                 </h2>
                 <table class="howto-table">
                     <tr>
-                        <th>{% if record.game == 'countdown' %}最短秒数{% else %}最少回数{% endif %}</th>
+                        <th>{% if record.game == 'countdown' %}最短秒数
+                            {% elif record.game == '2048' %}最高スコア
+                            {% else %}最少回数{% endif %}</th>
                         <th>プレイ数</th>
                     </tr>
+
                     <tr>
-                        <td>{{ record.best }}{% if record.game == 'countdown' %}秒{% else %}回{% endif %}</td>
+                        <td>{{ record.best }}{% if record.game == 'countdown' %}秒
+                            {% elif record.game == '2048' %}pt
+                            {% else %}回{% endif %}</td>
                         <td>{{ record.plays }}回</td>
                     </tr>
                 </table>

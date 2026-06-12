@@ -115,19 +115,7 @@ def debug_records():
     conn.close()
     return str(list(records))
 
-from numeron_app import numeron_bp
-from countdown_app import countdown_bp
-from game2048_app import game2048_bp
-app.register_blueprint(numeron_bp)
-app.register_blueprint(countdown_bp)
-app.register_blueprint(game2048_bp)
-
-init_db()
-
-if __name__ == "__main__":
-    app.run(debug=True)
-
-    @app.route("/debug/best")
+@app.route("/debug/best")
 def debug_best():
     conn = get_db()
     cur = conn.cursor()
@@ -148,3 +136,15 @@ def debug_best():
     cur.close()
     conn.close()
     return str(list(records))
+
+from numeron_app import numeron_bp
+from countdown_app import countdown_bp
+from game2048_app import game2048_bp
+app.register_blueprint(numeron_bp)
+app.register_blueprint(countdown_bp)
+app.register_blueprint(game2048_bp)
+
+init_db()
+
+if __name__ == "__main__":
+    app.run(debug=True)

@@ -38,7 +38,6 @@
         <a href="/countdown/howto" class="nav-link" onclick="confirmLeave(event, '/countdown/howto')">✦ 遊び方</a>
     </div>
 
-    <!-- 難易度表示・説明文（ゲーム中のみ表示） -->
     <div id="game-info-bar" style="display:none;">
         <p class="diff-label" id="difficulty-label">— ✦ やさしい —</p>
         <p class="cd-howto-label">数字と記号をタップして式を作ってください</p>
@@ -100,7 +99,6 @@
             <div id="history-list"></div>
         </div>
 
-        <!-- やり直しボタンを2つに分ける -->
         <div class="btn-group" style="margin-top:12px;">
             <button class="btn btn-normal" onclick="restartSame()">↺ 最初からやり直す</button>
             <button class="btn btn-easy" onclick="resetGame()">☰ 難易度選択に戻る</button>
@@ -176,7 +174,11 @@
     }
 
     function handleBack(event) {
-        gameInProgress ? confirmLeave(event, null, true) : (window.location.href = "/");
+        if (gameInProgress) {
+            confirmLeave(event, null, true);
+        } else {
+            window.location.href = "/";
+        }
     }
 
     // ===== ゲーム保存・復元 =====
@@ -344,6 +346,46 @@
     }
 
     // ===== ゲーム制御 =====
+    function doReset() {
+        clearInterval(timerInterval);
+        expression = "";
+        usedTileIndices = [];
+        gameInProgress = false;
+        sessionStorage.removeItem("countdown_save");
+        document.querySelectorAll(".btn-group .btn").forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        });
+        setDisplay("resume-area", "none");
+        setDisplay("game-info-bar", "none");
+        setDisplay("expr-display", "block");
+        setDisplay("status", "block");
+        setDisplay("diff-area", "block");
+        setDisplay("game-area", "none");
+    }
+
+    function restartSame() {
+        if (gameInProgress) {
+            showDialog(
+                "同じ難易度で最初からやり直しますか？",
+                () => { startGame(currentDifficulty); }
+            );
+        } else {
+            startGame(currentDifficulty);
+        }
+    }
+
+    function resetGame() {
+        if (gameInProgress) {
+            showDialog(
+                "途中経過は保存されます。<br>後ほど続きから再開できます。",
+                () => { doReset(); }
+            );
+        } else {
+            doReset();
+        }
+    }
+
     async function startGame(difficulty) {
         sessionStorage.removeItem("countdown_save");
         currentDifficulty = difficulty;
@@ -386,12 +428,6 @@
         renderTiles(data.numbers);
         updateTimer();
         startTimer();
-    }
-
-    async function restartSame() {
-        clearInterval(timerInterval);
-        sessionStorage.removeItem("countdown_save");
-        await startGame(currentDifficulty);
     }
 
     async function timeUp() {
@@ -467,47 +503,6 @@
             document.getElementById("status").textContent =
                 `${data.result}（目標まで あと ${data.diff}）`;
             saveGame();
-        }
-    }
-
-    function resetGame() {
-        if (gameInProgress) {
-            showDialog(
-                "途中経過は保存されます。<br>後ほど続きから再開できます。",
-                () => {
-                    clearInterval(timerInterval);
-                    expression = "";
-                    usedTileIndices = [];
-                    gameInProgress = false;
-                    sessionStorage.removeItem("countdown_save");
-                    document.querySelectorAll(".btn-group .btn").forEach(btn => {
-                        btn.disabled = false;
-                        btn.style.opacity = "1";
-                    });
-                    setDisplay("resume-area", "none");
-                    setDisplay("game-info-bar", "none");
-                    setDisplay("expr-display", "block");
-                    setDisplay("status", "block");
-                    setDisplay("diff-area", "block");
-                    setDisplay("game-area", "none");
-                }
-            );
-        } else {
-            clearInterval(timerInterval);
-            expression = "";
-            usedTileIndices = [];
-            gameInProgress = false;
-            sessionStorage.removeItem("countdown_save");
-            document.querySelectorAll(".btn-group .btn").forEach(btn => {
-                btn.disabled = false;
-                btn.style.opacity = "1";
-            });
-            setDisplay("resume-area", "none");
-            setDisplay("game-info-bar", "none");
-            setDisplay("expr-display", "block");
-            setDisplay("status", "block");
-            setDisplay("diff-area", "block");
-            setDisplay("game-area", "none");
         }
     }
 </script>

@@ -126,3 +126,25 @@ init_db()
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+    @app.route("/debug/best")
+def debug_best():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT
+            game,
+            difficulty,
+            CASE
+                WHEN game = '2048' THEN MAX(attempts)
+                ELSE MIN(attempts)
+            END as best,
+            COUNT(*) as plays
+        FROM records
+        WHERE user_id = 1
+        GROUP BY game, difficulty
+    """)
+    records = cur.fetchall()
+    cur.close()
+    conn.close()
+    return str(list(records))

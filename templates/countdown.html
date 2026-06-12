@@ -38,6 +38,12 @@
         <a href="/countdown/howto" class="nav-link" onclick="confirmLeave(event, '/countdown/howto')">✦ 遊び方</a>
     </div>
 
+    <!-- 難易度表示・説明文（ゲーム中のみ表示） -->
+    <div id="game-info-bar" style="display:none;">
+        <p class="diff-label" id="difficulty-label">— ✦ やさしい —</p>
+        <p class="cd-howto-label">数字と記号をタップして式を作ってください</p>
+    </div>
+
     <div id="diff-area">
         <p class="diff-label">— 難易度を選んでください —</p>
         <div id="resume-area" style="display:none; margin-bottom:1rem;">
@@ -81,7 +87,7 @@
 
         <div class="cd-expr-display" id="expr-display">式を入力してください</div>
 
-        <p class="status" id="status">数字と記号をタップして式を作ってください</p>
+        <p class="status" id="status"></p>
         <p class="error-msg" id="error-msg"></p>
         <p class="clear-msg" id="clear-msg"></p>
 
@@ -93,7 +99,12 @@
             <p class="history-title">◆ これまでの回答</p>
             <div id="history-list"></div>
         </div>
-        <button class="btn-reset" onclick="resetGame()">↺ 最初からやり直す</button>
+
+        <!-- やり直しボタンを2つに分ける -->
+        <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-normal" onclick="restartSame()">↺ 最初からやり直す</button>
+            <button class="btn btn-easy" onclick="resetGame()">☰ 難易度を選択する</button>
+        </div>
     </div>
     <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
 </div>
@@ -110,6 +121,13 @@
     let usedTileIndices = [];
     let gameInProgress = false;
     let savedNumbers = [];
+    let currentDifficulty = "";
+
+    const DIFFICULTY_LABELS = {
+        easy:   "✦ やさしい",
+        normal: "❖ ふつう",
+        hard:   "✧ むずかしい"
+    };
 
     window.onload = function() {
         const saved = sessionStorage.getItem("countdown_save");
@@ -171,6 +189,7 @@
             statusText: document.getElementById("status").textContent,
             numbers: savedNumbers,
             usedTileIndices, expression,
+            difficulty: currentDifficulty,
             historyHTML: historyItems.join("|||")
         }));
     }
@@ -184,6 +203,7 @@
         expression = d.expression;
         usedTileIndices = d.usedTileIndices;
         savedNumbers = d.numbers;
+        currentDifficulty = d.difficulty || "easy";
         gameCleared = gameOver = false;
         gameInProgress = true;
 
@@ -192,6 +212,9 @@
         setDisplay("input-area", "block");
         setDisplay("expr-display", "block");
         setDisplay("status", "block");
+        setDisplay("game-info-bar", "block");
+        document.getElementById("difficulty-label").textContent =
+            `— ${DIFFICULTY_LABELS[currentDifficulty]} —`;
         document.getElementById("target-num").textContent = d.target;
         document.getElementById("error-msg").style.display = "none";
         document.getElementById("clear-msg").style.display = "none";
@@ -323,6 +346,7 @@
     // ===== ゲーム制御 =====
     async function startGame(difficulty) {
         sessionStorage.removeItem("countdown_save");
+        currentDifficulty = difficulty;
 
         const btns = document.querySelectorAll(".btn-group .btn");
         btns.forEach(btn => { btn.disabled = true; btn.style.opacity = "0.6"; });
@@ -347,11 +371,14 @@
         setDisplay("input-area", "block");
         setDisplay("expr-display", "block");
         setDisplay("status", "block");
+        setDisplay("game-info-bar", "block");
+        document.getElementById("difficulty-label").textContent =
+            `— ${DIFFICULTY_LABELS[difficulty]} —`;
         document.getElementById("target-num").textContent = data.target;
         document.getElementById("history-list").innerHTML = "";
         document.getElementById("error-msg").style.display = "none";
         document.getElementById("clear-msg").style.display = "none";
-        document.getElementById("status").textContent = "数字と記号をタップして式を作ってください";
+        document.getElementById("status").textContent = "";
         updateDisplay();
 
         btns.forEach(btn => { btn.disabled = false; btn.style.opacity = "1"; });
@@ -359,6 +386,12 @@
         renderTiles(data.numbers);
         updateTimer();
         startTimer();
+    }
+
+    async function restartSame() {
+        clearInterval(timerInterval);
+        sessionStorage.removeItem("countdown_save");
+        await startGame(currentDifficulty);
     }
 
     async function timeUp() {
@@ -448,6 +481,7 @@
             btn.style.opacity = "1";
         });
         setDisplay("resume-area", "none");
+        setDisplay("game-info-bar", "none");
         setDisplay("expr-display", "block");
         setDisplay("status", "block");
         setDisplay("diff-area", "block");

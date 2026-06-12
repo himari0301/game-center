@@ -747,3 +747,11 @@ body {
     50%  { transform: scale(1.2); }
     100% { transform: scale(1); }
 }
+
+/* 難易度表示・説明文 */
+.cd-howto-label {
+    text-align: center;
+    font-size: clamp(11px, 2.5vw, 13px);
+    color: #7a9aaa;
+    margin-bottom: 1rem;
+}

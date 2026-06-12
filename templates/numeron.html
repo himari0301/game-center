@@ -38,6 +38,11 @@
         <a href="/numeron/howto" class="nav-link" onclick="confirmLeave(event, '/numeron/howto')">✦ 遊び方</a>
     </div>
 
+    <!-- 難易度表示（ゲーム中のみ表示） -->
+    <div id="game-info-bar" style="display:none;">
+        <p class="diff-label" id="difficulty-label">— ✦ やさしい —</p>
+    </div>
+
     <div id="diff-area">
         <p class="diff-label">— 難易度を選んでください —</p>
 
@@ -66,17 +71,29 @@
             <p class="history-title">◆ これまでの回答</p>
             <div id="history-list"></div>
         </div>
-        <button class="btn-reset" onclick="resetGame()">↺ 最初からやり直す</button>
+
+        <!-- やり直しボタンを2つに分ける -->
+        <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-normal" onclick="restartSame()">↺ 最初からやり直す</button>
+            <button class="btn btn-easy" onclick="resetGame()">☰ 難易度選択に戻る</button>
+        </div>
     </div>
     <div class="gold-bar" style="margin-top:1.5rem; margin-bottom:0;"></div>
 </div>
 
-<button onclick="handleBack(event)" class="back-to-top">← 戻る</button>
+<button onclick="confirmLeave(event, null, true)" class="back-to-top">← 戻る</button>
 
 <script>
     let currentDigits = 0;
     let gameCleared = false;
     let gameInProgress = false;
+    let currentDifficulty = "";
+
+    const DIFFICULTY_LABELS = {
+        easy:   "✦ やさしい（4桁）",
+        normal: "❖ ふつう（5桁）",
+        hard:   "✧ むずかしい（7桁）"
+    };
 
     window.onload = function() {
         const saved = sessionStorage.getItem("numeron_save");
@@ -85,10 +102,10 @@
         }
     }
 
+    // ===== ダイアログ =====
     function showDialog(message, onOk) {
         const existing = document.getElementById("custom-dialog");
         if (existing) existing.remove();
-
         const overlay = document.createElement("div");
         overlay.className = "dialog-overlay";
         overlay.id = "custom-dialog";
@@ -97,25 +114,18 @@
                 <p class="dialog-title">⚠ ゲームを中断しますか？</p>
                 <p class="dialog-message">${message}</p>
                 <div class="dialog-buttons">
-                    <button class="dialog-btn-cancel" onclick="closeDialog()">
-                        キャンセル
-                    </button>
-                    <button class="dialog-btn-ok" id="dialog-ok-btn">
-                        中断する
-                    </button>
+                    <button class="dialog-btn-cancel" onclick="closeDialog()">キャンセル</button>
+                    <button class="dialog-btn-ok" id="dialog-ok-btn">中断する</button>
                 </div>
             </div>
         `;
         document.body.appendChild(overlay);
-        document.getElementById("dialog-ok-btn").onclick = function() {
-            closeDialog();
-            onOk();
-        };
+        document.getElementById("dialog-ok-btn").onclick = () => { closeDialog(); onOk(); };
     }
 
     function closeDialog() {
-        const dialog = document.getElementById("custom-dialog");
-        if (dialog) dialog.remove();
+        const d = document.getElementById("custom-dialog");
+        if (d) d.remove();
     }
 
     function confirmLeave(event, url, isBack = false) {
@@ -123,43 +133,44 @@
         event.preventDefault();
         showDialog(
             "途中経過は保存されます。<br>後ほど続きから再開できます。",
-            function() {
+            () => {
                 gameInProgress = false;
-                if (isBack) {
-                    history.back();
-                } else {
-                    window.location.href = url;
-                }
+                isBack ? history.back() : (window.location.href = url);
             }
         );
     }
 
+    function handleBack(event) {
+        gameInProgress ? confirmLeave(event, null, true) : (window.location.href = "/");
+    }
+
+    // ===== ゲーム保存・復元 =====
     function saveGame() {
         if (!gameInProgress) return;
-        const historyItems = [];
-        document.querySelectorAll(".history-item").forEach(item => {
-            historyItems.push(item.innerHTML);
-        });
-        const saveData = {
+        const historyItems = [...document.querySelectorAll(".history-item")].map(i => i.innerHTML);
+        sessionStorage.setItem("numeron_save", JSON.stringify({
             digits: currentDigits,
+            difficulty: currentDifficulty,
             attempts: document.getElementById("status").textContent,
             historyHTML: historyItems.join("|||")
-        };
-        sessionStorage.setItem("numeron_save", JSON.stringify(saveData));
+        }));
     }
 
     function resumeGame() {
         const saved = sessionStorage.getItem("numeron_save");
         if (!saved) return;
-
         const saveData = JSON.parse(saved);
         currentDigits = saveData.digits;
+        currentDifficulty = saveData.difficulty || "easy";
         gameCleared = false;
         gameInProgress = true;
 
         document.getElementById("diff-area").style.display = "none";
         document.getElementById("game-area").style.display = "block";
         document.getElementById("input-area").style.display = "block";
+        document.getElementById("game-info-bar").style.display = "block";
+        document.getElementById("difficulty-label").textContent =
+            `— ${DIFFICULTY_LABELS[currentDifficulty]} —`;
         document.getElementById("status").textContent = saveData.attempts;
         document.getElementById("guess-input").maxLength = currentDigits;
         document.getElementById("guess-input").placeholder = "？".repeat(currentDigits);
@@ -179,14 +190,13 @@
         }
     }
 
+    // ===== ゲーム制御 =====
     async function startGame(difficulty) {
         sessionStorage.removeItem("numeron_save");
+        currentDifficulty = difficulty;
 
         const btns = document.querySelectorAll(".btn-group .btn");
-        btns.forEach(btn => {
-            btn.disabled = true;
-            btn.style.opacity = "0.6";
-        });
+        btns.forEach(btn => { btn.disabled = true; btn.style.opacity = "0.6"; });
 
         const res = await fetch("/numeron/start", {
             method: "POST",
@@ -201,6 +211,9 @@
         document.getElementById("diff-area").style.display = "none";
         document.getElementById("game-area").style.display = "block";
         document.getElementById("input-area").style.display = "block";
+        document.getElementById("game-info-bar").style.display = "block";
+        document.getElementById("difficulty-label").textContent =
+            `— ${DIFFICULTY_LABELS[difficulty]} —`;
         document.getElementById("status").textContent = data.message;
         document.getElementById("guess-input").maxLength = currentDigits;
         document.getElementById("guess-input").placeholder = "？".repeat(currentDigits);
@@ -208,10 +221,12 @@
         document.getElementById("error-msg").style.display = "none";
         document.getElementById("clear-msg").style.display = "none";
 
-        btns.forEach(btn => {
-            btn.disabled = false;
-            btn.style.opacity = "1";
-        });
+        btns.forEach(btn => { btn.disabled = false; btn.style.opacity = "1"; });
+    }
+
+    async function restartSame() {
+        sessionStorage.removeItem("numeron_save");
+        await startGame(currentDifficulty);
     }
 
     async function sendGuess() {
@@ -275,12 +290,12 @@
     function resetGame() {
         sessionStorage.removeItem("numeron_save");
         gameInProgress = false;
-        const btns = document.querySelectorAll(".btn-group .btn");
-        btns.forEach(btn => {
+        document.querySelectorAll(".btn-group .btn").forEach(btn => {
             btn.disabled = false;
             btn.style.opacity = "1";
         });
         document.getElementById("resume-area").style.display = "none";
+        document.getElementById("game-info-bar").style.display = "none";
         document.getElementById("diff-area").style.display = "block";
         document.getElementById("game-area").style.display = "none";
     }
@@ -288,16 +303,6 @@
     document.getElementById("guess-input").addEventListener("keypress", function(e) {
         if (e.key === "Enter") sendGuess();
     });
-    
-    function handleBack(event) {
-    if (gameInProgress) {
-        // ゲーム中は確認ダイアログ
-        confirmLeave(event, null, true);
-    } else {
-        // ゲーム中でない場合はトップへ
-        window.location.href = "/";
-    }
-}
 </script>
 </body>
 </html>

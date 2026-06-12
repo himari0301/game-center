@@ -156,37 +156,33 @@
         }));
     }
 
-    function resumeGame() {
-        const saved = sessionStorage.getItem("numeron_save");
-        if (!saved) return;
-        const saveData = JSON.parse(saved);
-        currentDigits = saveData.digits;
-        currentDifficulty = saveData.difficulty || "easy";
-        gameCleared = false;
-        gameInProgress = true;
-
-        document.getElementById("diff-area").style.display = "none";
-        document.getElementById("game-area").style.display = "block";
-        document.getElementById("input-area").style.display = "block";
-        document.getElementById("game-info-bar").style.display = "block";
-        document.getElementById("difficulty-label").textContent =
-            `— ${DIFFICULTY_LABELS[currentDifficulty]} —`;
-        document.getElementById("status").textContent = saveData.attempts;
-        document.getElementById("guess-input").maxLength = currentDigits;
-        document.getElementById("guess-input").placeholder = "？".repeat(currentDigits);
-        document.getElementById("error-msg").style.display = "none";
-        document.getElementById("clear-msg").style.display = "none";
-
-        const list = document.getElementById("history-list");
-        list.innerHTML = "";
-        if (saveData.historyHTML) {
-            saveData.historyHTML.split("|||").forEach(html => {
-                if (!html) return;
-                const item = document.createElement("div");
-                item.className = "history-item";
-                item.innerHTML = html;
-                list.appendChild(item);
+    function resetGame() {
+        if (gameInProgress) {
+            showDialog(
+                "途中経過は保存されます。<br>後ほど続きから再開できます。",
+                () => {
+                    sessionStorage.removeItem("numeron_save");
+                    gameInProgress = false;
+                    document.querySelectorAll(".btn-group .btn").forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.opacity = "1";
+                    });
+                    document.getElementById("resume-area").style.display = "none";
+                    document.getElementById("game-info-bar").style.display = "none";
+                    document.getElementById("diff-area").style.display = "block";
+                    document.getElementById("game-area").style.display = "none";
+                }
+            );
+        } else {
+            sessionStorage.removeItem("numeron_save");
+            document.querySelectorAll(".btn-group .btn").forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = "1";
             });
+            document.getElementById("resume-area").style.display = "none";
+            document.getElementById("game-info-bar").style.display = "none";
+            document.getElementById("diff-area").style.display = "block";
+            document.getElementById("game-area").style.display = "none";
         }
     }
 

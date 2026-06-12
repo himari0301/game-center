@@ -471,21 +471,44 @@
     }
 
     function resetGame() {
-        clearInterval(timerInterval);
-        expression = "";
-        usedTileIndices = [];
-        gameInProgress = false;
-        sessionStorage.removeItem("countdown_save");
-        document.querySelectorAll(".btn-group .btn").forEach(btn => {
-            btn.disabled = false;
-            btn.style.opacity = "1";
-        });
-        setDisplay("resume-area", "none");
-        setDisplay("game-info-bar", "none");
-        setDisplay("expr-display", "block");
-        setDisplay("status", "block");
-        setDisplay("diff-area", "block");
-        setDisplay("game-area", "none");
+        if (gameInProgress) {
+            showDialog(
+                "途中経過は保存されます。<br>後ほど続きから再開できます。",
+                () => {
+                    clearInterval(timerInterval);
+                    expression = "";
+                    usedTileIndices = [];
+                    gameInProgress = false;
+                    sessionStorage.removeItem("countdown_save");
+                    document.querySelectorAll(".btn-group .btn").forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.opacity = "1";
+                    });
+                    setDisplay("resume-area", "none");
+                    setDisplay("game-info-bar", "none");
+                    setDisplay("expr-display", "block");
+                    setDisplay("status", "block");
+                    setDisplay("diff-area", "block");
+                    setDisplay("game-area", "none");
+                }
+            );
+        } else {
+            clearInterval(timerInterval);
+            expression = "";
+            usedTileIndices = [];
+            gameInProgress = false;
+            sessionStorage.removeItem("countdown_save");
+            document.querySelectorAll(".btn-group .btn").forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+            });
+            setDisplay("resume-area", "none");
+            setDisplay("game-info-bar", "none");
+            setDisplay("expr-display", "block");
+            setDisplay("status", "block");
+            setDisplay("diff-area", "block");
+            setDisplay("game-area", "none");
+        }
     }
 </script>
 </body>

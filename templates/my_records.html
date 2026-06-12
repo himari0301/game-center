@@ -39,7 +39,9 @@
                 {% set ns.current_game = record.game %}
                 <p class="diff-label">
                     — {% if record.game == 'numeron' %}♟ ヌメロン
-                    {% else %}✦ カウントダウン{% endif %} —
+                    {% elif record.game == 'countdown' %}✦ カウントダウン
+                    {% elif record.game == '2048' %}❖ 2048
+                    {% endif %} —
                 </p>
             {% endif %}
             <div class="howto-section">
@@ -56,7 +58,6 @@
                             {% else %}最少回数{% endif %}</th>
                         <th>プレイ数</th>
                     </tr>
-
                     <tr>
                         <td>{{ record.best }}{% if record.game == 'countdown' %}秒
                             {% elif record.game == '2048' %}pt
@@ -86,6 +87,8 @@
             window.location.href = '/numeron';
         } else if (from === 'countdown') {
             window.location.href = '/countdown';
+        } else if (from === '2048') {
+            window.location.href = '/2048';
         } else {
             window.location.href = '/';
         }

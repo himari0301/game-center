@@ -87,15 +87,17 @@ def get_best_records_all(user_id):
         WHERE user_id = %s
         GROUP BY game, difficulty
         ORDER BY
-            CASE game
-                WHEN 'countdown' THEN 1
-                WHEN 'numeron' THEN 2
-                WHEN '2048' THEN 3
+            CASE
+                WHEN game = 'countdown' THEN 1
+                WHEN game = 'numeron' THEN 2
+                WHEN game = '2048' THEN 3
+                ELSE 4
             END,
-            CASE difficulty
-                WHEN 'easy' THEN 1
-                WHEN 'normal' THEN 2
-                WHEN 'hard' THEN 3
+            CASE
+                WHEN difficulty = 'easy' THEN 1
+                WHEN difficulty = 'normal' THEN 2
+                WHEN difficulty = 'hard' THEN 3
+                ELSE 4
             END
     """, (user_id,))
     records = cur.fetchall()

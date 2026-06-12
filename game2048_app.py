@@ -1,5 +1,5 @@
 # game2048_app.py
-from flask import Blueprint, render_template, request, jsonify, session
+from flask import Blueprint, render_template, request, jsonify
 from flask_login import current_user
 from database import save_record
 
@@ -17,3 +17,7 @@ def save_2048():
     if current_user.is_authenticated:
         save_record(current_user.id, "2048", difficulty, score)
     return jsonify({"success": True})
+
+@game2048_bp.route("/2048/howto")
+def game2048_howto():
+    return render_template("game2048_howto.html")
